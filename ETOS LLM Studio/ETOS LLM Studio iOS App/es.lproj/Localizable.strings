@@ -8806,3 +8806,5 @@ Por favor Generar a short, concise Título for este conversation based encendido
 "按聊天列表顺序返回已保存的会话，可按名称筛选。" = "Devuelve las conversaciones guardadas en el orden de la lista de chats. Se pueden filtrar por nombre.";
 "读取最近回复" = "Obtener la última respuesta";
 "没有可读取的文本回复。" = "No hay ninguna respuesta de texto disponible.";
+"ETOS" = "ETOS";
+"返回所选会话最近一轮的文本回复。" = "Devuelve el texto de la respuesta al último mensaje de la conversación seleccionada.";

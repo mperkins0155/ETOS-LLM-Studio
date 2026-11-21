@@ -37,7 +37,7 @@ struct WatchETOSSessionEntityQuery: EntityStringQuery {
 
 struct StartWatchETOSAgentTaskIntent: AppIntent {
     static var title: LocalizedStringResource = "新建 Agent 任务"
-    static var description = IntentDescription("在手表的新会话中交给 ETOS Agent 处理。")
+    static var description = IntentDescription("在手表的新会话中交给 ETOS Agent 处理。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "任务") var prompt: String
     @Parameter(title: "标题") var taskTitle: String?
@@ -69,7 +69,7 @@ struct StartWatchETOSAgentTaskIntent: AppIntent {
 
 struct ContinueWatchETOSSessionIntent: AppIntent {
     static var title: LocalizedStringResource = "继续指定会话"
-    static var description = IntentDescription("把新消息发送到手表上的指定 ETOS 会话。")
+    static var description = IntentDescription("把新消息发送到手表上的指定 ETOS 会话。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "会话") var session: WatchETOSSessionEntity
     @Parameter(title: "消息") var prompt: String
@@ -95,7 +95,7 @@ struct ContinueWatchETOSSessionIntent: AppIntent {
 
 struct GetWatchETOSTaskStatusIntent: AppIntent {
     static var title: LocalizedStringResource = "获取 Agent 状态"
-    static var description = IntentDescription("查看手表上指定会话或最近任务的运行状态。")
+    static var description = IntentDescription("查看手表上指定会话或最近任务的运行状态。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "会话") var session: WatchETOSSessionEntity?
 
@@ -123,7 +123,7 @@ struct GetWatchETOSTaskStatusIntent: AppIntent {
 
 struct StopWatchETOSTaskIntent: AppIntent {
     static var title: LocalizedStringResource = "停止 Agent 任务"
-    static var description = IntentDescription("停止手表指定会话中正在运行的请求。")
+    static var description = IntentDescription("停止手表指定会话中正在运行的请求。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "会话") var session: WatchETOSSessionEntity
 

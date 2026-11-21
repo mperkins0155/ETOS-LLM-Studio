@@ -79,7 +79,7 @@ struct ETOSMemoryEntityQuery: EntityStringQuery {
 
 struct StartETOSAgentTaskIntent: AppIntent {
     static var title: LocalizedStringResource = "新建 Agent 任务"
-    static var description = IntentDescription("在新会话中交给 ETOS Agent 处理。")
+    static var description = IntentDescription("在新会话中交给 ETOS Agent 处理。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "任务") var prompt: String
     @Parameter(title: "标题") var taskTitle: String?
@@ -110,7 +110,7 @@ struct StartETOSAgentTaskIntent: AppIntent {
 
 struct ContinueETOSSessionIntent: AppIntent {
     static var title: LocalizedStringResource = "继续指定会话"
-    static var description = IntentDescription("把新消息发送到指定的 ETOS 会话。")
+    static var description = IntentDescription("把新消息发送到指定的 ETOS 会话。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "会话") var session: ETOSSessionEntity
     @Parameter(title: "消息") var prompt: String
@@ -135,7 +135,7 @@ struct ContinueETOSSessionIntent: AppIntent {
 
 struct GetETOSTaskStatusIntent: AppIntent {
     static var title: LocalizedStringResource = "获取 Agent 状态"
-    static var description = IntentDescription("查看指定会话或最近任务的运行状态。")
+    static var description = IntentDescription("查看指定会话或最近任务的运行状态。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "会话") var session: ETOSSessionEntity?
 
@@ -165,7 +165,7 @@ struct GetETOSTaskStatusIntent: AppIntent {
 
 struct StopETOSTaskIntent: AppIntent {
     static var title: LocalizedStringResource = "停止 Agent 任务"
-    static var description = IntentDescription("停止指定会话中正在运行的请求。")
+    static var description = IntentDescription("停止指定会话中正在运行的请求。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "会话") var session: ETOSSessionEntity
 
@@ -245,6 +245,7 @@ struct OpenETOSMemoryIntent: AppIntent {
 
 struct OpenETOSBrowserIntent: AppIntent {
     static var title: LocalizedStringResource = "打开 Browser Agent"
+    static var description = IntentDescription("打开浏览器", searchKeywords: ["ETOS"])
     static var openAppWhenRun = true
 
     @MainActor

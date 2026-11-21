@@ -17,7 +17,7 @@ struct AskETOSIntent: AppIntent {
 
 struct SendETOSChatMessageIntent: AppIntent {
     static var title: LocalizedStringResource = "发送聊天消息"
-    static var description = IntentDescription("留空会话以新建聊天，或在所选会话中继续。返回收到消息的会话。")
+    static var description = IntentDescription("留空会话以新建聊天，或在所选会话中继续。返回收到消息的会话。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "消息", inputConnectionBehavior: .connectToPreviousIntentResult)
     var prompt: String
@@ -31,7 +31,7 @@ struct SendETOSChatMessageIntent: AppIntent {
 
 struct ListETOSSessionsIntent: AppIntent {
     static var title: LocalizedStringResource = "列出会话"
-    static var description = IntentDescription("按聊天列表顺序返回已保存的会话，可按名称筛选。")
+    static var description = IntentDescription("按聊天列表顺序返回已保存的会话，可按名称筛选。", searchKeywords: ["ETOS"])
 
     @Parameter(title: "关键词") var query: String?
 
@@ -43,6 +43,7 @@ struct ListETOSSessionsIntent: AppIntent {
 
 struct GetETOSChatReplyIntent: AppIntent {
     static var title: LocalizedStringResource = "读取最近回复"
+    static var description = IntentDescription("返回所选会话最近一轮的文本回复。", searchKeywords: ["ETOS"])
     @Parameter(title: "会话", inputConnectionBehavior: .connectToPreviousIntentResult)
     var session: ETOSSessionEntity
 
@@ -92,6 +93,7 @@ struct ETOSSessionEntityQuery: EntityStringQuery {
 
 struct StartETOSAgentTaskIntent: AppIntent {
     static var title: LocalizedStringResource = "新建 Agent 任务"
+    static var description = IntentDescription("在新会话中交给 ETOS Agent 处理。", searchKeywords: ["ETOS"])
     @Parameter(title: "任务", inputConnectionBehavior: .connectToPreviousIntentResult)
     var prompt: String
 

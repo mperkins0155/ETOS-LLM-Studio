@@ -8549,3 +8549,5 @@
 "按聊天列表顺序返回已保存的会话，可按名称筛选。" = "Returns saved conversations in chat list order. Filter by name if needed.";
 "读取最近回复" = "Get Latest Reply";
 "没有可读取的文本回复。" = "No text reply is available.";
+"ETOS" = "ETOS";
+"返回所选会话最近一轮的文本回复。" = "Returns the text reply from the latest turn in the selected conversation.";

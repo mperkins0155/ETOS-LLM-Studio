@@ -8625,3 +8625,5 @@ Veuillez Générer a short, concise Titre for ce conversation based activé le u
 "按聊天列表顺序返回已保存的会话，可按名称筛选。" = "Renvoie les conversations enregistrées dans l’ordre de la liste des chats. Vous pouvez les filtrer par nom.";
 "读取最近回复" = "Obtenir la dernière réponse";
 "没有可读取的文本回复。" = "Aucune réponse textuelle n’est disponible.";
+"ETOS" = "ETOS";
+"返回所选会话最近一轮的文本回复。" = "Renvoie le texte de la réponse au dernier message de la conversation choisie.";

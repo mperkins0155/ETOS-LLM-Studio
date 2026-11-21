@@ -1,5 +1,6 @@
 // 由 scripts/prepare-watch-localizations.py 生成，仅供系统读取 App Intents 元数据。
 "Agent 状态" = "Estado del Agent";
+"ETOS" = "ETOS";
 "任务" = "Tarea";
 "会话" = "Sesiones";
 "保存到 ETOS 记忆" = "Guardar en la memoria de ETOS";
@@ -29,3 +30,4 @@
 "询问 ETOS" = "Preguntar a ETOS";
 "请求 ID" = "Request ID";
 "读取最近回复" = "Obtener la última respuesta";
+"返回所选会话最近一轮的文本回复。" = "Devuelve el texto de la respuesta al último mensaje de la conversación seleccionada.";
