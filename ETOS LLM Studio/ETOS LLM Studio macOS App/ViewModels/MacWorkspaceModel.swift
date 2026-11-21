@@ -492,7 +492,8 @@ final class MacWorkspaceModel: ObservableObject {
     }
 
     func selectSession(_ id: UUID?) {
-        guard !isRestoringData, !isMutatingHistory, !sessionLibrary.isWorking, let service, let session = sessions.first(where: { $0.id == id }) else { return }
+        guard !isRestoringData, !isMutatingHistory, !sessionLibrary.isWorking, let service,
+              let session = service.chatSessionsSubject.value.first(where: { $0.id == id }) else { return }
         if currentSession?.id != id { incomingDocuments.invalidateAttachmentContext() }
         Task { [weak self] in await service.selectSession(session, isSelectionAllowed: { self?.canManageLocalModels == true && self?.isMutatingHistory == false }) }
     }

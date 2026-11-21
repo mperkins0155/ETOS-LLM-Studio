@@ -248,6 +248,16 @@ public final class AppLockManager: ObservableObject {
         }
     }
 
+    /// 后台快捷指令不会触发前台回调，也不能借一次读取重置后台计时。
+    func requireUnlockedForShortcut() throws {
+        refreshState()
+        if state == .unlocked, let backgroundEnteredAt,
+           now().timeIntervalSince(backgroundEnteredAt) >= TimeInterval(timeoutSeconds) {
+            state = .locked
+        }
+        guard state != .locked else { throw AppLockError.locked }
+    }
+
     public func setTimeout(seconds: Int) {
         appConfig.appLockTimeoutSeconds = Self.normalizedTimeoutSeconds(seconds)
     }

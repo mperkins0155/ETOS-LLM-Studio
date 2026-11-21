@@ -23,35 +23,15 @@ struct WatchETOSSessionEntity: AppEntity, Identifiable {
 
 struct WatchETOSSessionEntityQuery: EntityStringQuery {
     func entities(for identifiers: [UUID]) async throws -> [WatchETOSSessionEntity] {
-        let wanted = Set(identifiers)
-        let sessions = await Task.detached(priority: .userInitiated) {
-            Persistence.loadChatSessions()
-        }.value
-        return sessions
-            .filter { wanted.contains($0.id) }
-            .prefix(20)
-            .map { WatchETOSSessionEntity(id: $0.id, name: String($0.name.prefix(80))) }
+        try await SystemChatShortcuts.sessions(identifiers: identifiers).map { WatchETOSSessionEntity(id: $0.id, name: $0.name) }
     }
 
     func suggestedEntities() async throws -> [WatchETOSSessionEntity] {
-        let sessions = await Task.detached(priority: .userInitiated) {
-            Persistence.loadChatSessions()
-        }.value
-        return sessions
-            .prefix(20)
-            .map { WatchETOSSessionEntity(id: $0.id, name: String($0.name.prefix(80))) }
+        try await entities(matching: "")
     }
 
     func entities(matching string: String) async throws -> [WatchETOSSessionEntity] {
-        let query = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        let sessions = await Task.detached(priority: .userInitiated) {
-            Persistence.loadChatSessions()
-        }.value
-        return sessions
-            .lazy
-            .filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
-            .prefix(20)
-            .map { WatchETOSSessionEntity(id: $0.id, name: String($0.name.prefix(80))) }
+        try await SystemChatShortcuts.sessions(matching: string, limit: 20).map { WatchETOSSessionEntity(id: $0.id, name: $0.name) }
     }
 }
 
@@ -191,6 +171,12 @@ struct SearchWatchETOSMemoryIntent: AppIntent {
 
 struct WatchETOSAppShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: AskETOSIntent(),
+            phrases: ["询问 \(.applicationName)"],
+            shortTitle: "询问 ETOS",
+            systemImageName: "text.bubble"
+        )
         AppShortcut(
             intent: StartWatchETOSAgentTaskIntent(),
             phrases: ["用 \(.applicationName) 新建 Agent 任务"],

@@ -141,6 +141,21 @@ struct AppLockManagerTests {
         #expect(manager.state == .locked)
     }
 
+    @Test("后台快捷指令不会延长解锁时限")
+    func shortcutAccessHonorsBackgroundTimeout() throws {
+        let backup = backupAppLockConfig()
+        defer { restoreAppLockConfig(backup) }
+        var date = Date(timeIntervalSince1970: 1_000)
+        let manager = AppLockManager(credentialStore: InMemoryAppLockCredentialStore(), now: { date })
+        try manager.enable(password: "passcode", confirmation: "passcode")
+        manager.setTimeout(seconds: 10)
+        manager.handleSceneDidEnterBackground()
+        date = date.addingTimeInterval(9)
+        try manager.requireUnlockedForShortcut()
+        date = date.addingTimeInterval(1)
+        #expect(throws: AppLockManager.AppLockError.locked) { try manager.requireUnlockedForShortcut() }
+    }
+
     @Test("禁用应用锁会删除凭据并进入 disabled")
     func testDisableDeletesCredential() throws {
         let backup = backupAppLockConfig()

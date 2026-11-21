@@ -8796,3 +8796,13 @@ Veuillez Générer a short, concise Titre for ce conversation based activé le u
 "usage_dashboard.segment.input" = "Entrée";
 "usage_dashboard.segment.output" = "Sortie";
 "usage_dashboard.segment.thinking" = "Réflexion";
+
+// 系统快捷指令的聊天动作
+"询问 ETOS" = "Demander à ETOS";
+"向聊天模型提问并返回文本，不创建会话。" = "Pose une question au modèle et renvoie sa réponse sous forme de texte sans créer de conversation.";
+"发送聊天消息" = "Envoyer un message";
+"留空会话以新建聊天，或在所选会话中继续。返回收到消息的会话。" = "Laissez la conversation vide pour créer un chat, ou choisissez une conversation à poursuivre. Renvoie la conversation qui a reçu le message.";
+"列出会话" = "Lister les conversations";
+"按聊天列表顺序返回已保存的会话，可按名称筛选。" = "Renvoie les conversations enregistrées dans l’ordre de la liste des chats. Vous pouvez les filtrer par nom.";
+"读取最近回复" = "Obtenir la dernière réponse";
+"没有可读取的文本回复。" = "Aucune réponse textuelle n’est disponible.";

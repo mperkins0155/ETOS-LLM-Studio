@@ -8796,3 +8796,13 @@ Por favor Generar a short, concise Título for este conversation based encendido
 "usage_dashboard.segment.input" = "Entrada";
 "usage_dashboard.segment.output" = "Salida";
 "usage_dashboard.segment.thinking" = "Razonamiento";
+
+// 系统快捷指令的聊天动作
+"询问 ETOS" = "Preguntar a ETOS";
+"向聊天模型提问并返回文本，不创建会话。" = "Pregunta al modelo de chat y devuelve la respuesta como texto sin crear una conversación.";
+"发送聊天消息" = "Enviar mensaje de chat";
+"留空会话以新建聊天，或在所选会话中继续。返回收到消息的会话。" = "Deja la conversación en blanco para iniciar un chat o selecciona una para continuarla. Devuelve la conversación que recibió el mensaje.";
+"列出会话" = "Listar conversaciones";
+"按聊天列表顺序返回已保存的会话，可按名称筛选。" = "Devuelve las conversaciones guardadas en el orden de la lista de chats. Se pueden filtrar por nombre.";
+"读取最近回复" = "Obtener la última respuesta";
+"没有可读取的文本回复。" = "No hay ninguna respuesta de texto disponible.";

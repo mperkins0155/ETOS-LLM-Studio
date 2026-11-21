@@ -6,11 +6,13 @@
 import Foundation
 import Combine
 
-public enum ETOSSystemEntryError: LocalizedError {
+public enum ETOSSystemEntryError: LocalizedError, Equatable {
     case emptyPrompt
     case sessionNotFound
     case requestInProgress
     case persistenceUnavailable
+    case databaseLocked
+    case noTextReply
 
     public var errorDescription: String? {
         switch self {
@@ -22,6 +24,10 @@ public enum ETOSSystemEntryError: LocalizedError {
             return NSLocalizedString("该请求正在处理中。", comment: "System-entry request is already claimed")
         case .persistenceUnavailable:
             return NSLocalizedString("暂时无法写入本地数据库。", comment: "System-entry persistence unavailable")
+        case .databaseLocked:
+            return NSLocalizedString("请先解锁数据库。", comment: "")
+        case .noTextReply:
+            return NSLocalizedString("没有可读取的文本回复。", value: "No text reply is available.", comment: "")
         }
     }
 }
@@ -69,6 +75,7 @@ public final class SystemEntryCoordinator {
         title: String? = nil,
         requestID: UUID,
         kind: ETOSSystemEntryRequestKind = .appIntent,
+        activate: Bool = true,
         fileAttachments: [FileAttachment] = [],
         imageAttachments: [ImageAttachment] = []
     ) async throws -> ETOSSystemEntryTaskResult {
@@ -77,39 +84,24 @@ public final class SystemEntryCoordinator {
             throw ETOSSystemEntryError.emptyPrompt
         }
 
-        if let receipt = await Task.detached(priority: .userInitiated, operation: {
-            Persistence.loadSystemEntryReceipt(id: requestID)
-        }).value {
-            guard let sessionID = receipt.sessionID else { throw ETOSSystemEntryError.requestInProgress }
-            return ETOSSystemEntryTaskResult(sessionID: sessionID, wasAlreadyHandled: true)
-        }
-        let claimed = await Task.detached(priority: .userInitiated) {
-            Persistence.claimSystemEntryRequest(id: requestID, kind: kind)
-        }.value
-        guard claimed else {
-            if let sessionID = await Task.detached(priority: .userInitiated, operation: {
-                Persistence.loadSystemEntryReceipt(id: requestID)?.sessionID
-            }).value {
-                return ETOSSystemEntryTaskResult(sessionID: sessionID, wasAlreadyHandled: true)
-            }
-            throw ETOSSystemEntryError.persistenceUnavailable
-        }
-
-        let session = chatService.createSavedSession(
-            name: resolvedTitle(title, prompt: trimmed),
-            systemPrompt: textConfig(.systemPrompt)
+        // 先等冷启动加载完毕，再合并新会话，避免启动快照覆盖刚发布的会话。
+        await chatService.waitForInitialPersistenceStateIfNeeded()
+        await AppConfigStore.shared.waitForPersistentStoreLoaded()
+        let session = ChatSession(
+            id: UUID(), name: resolvedTitle(title, prompt: trimmed), systemPrompt: AppConfigStore.shared.systemPrompt
         )
-        let persisted = await Task.detached(priority: .userInitiated) {
-            guard Persistence.saveLocalAgentMode(mode, sessionID: session.id) else { return false }
-            return Persistence.saveSystemEntryReceipt(
-                ETOSSystemEntryReceipt(id: requestID, kind: kind, sessionID: session.id)
-            )
+        let result = try await Task.detached(priority: .userInitiated) {
+            try Persistence.insertSystemEntrySession(session, mode: mode, requestID: requestID, kind: kind)
         }.value
-        guard persisted else {
-            throw ETOSSystemEntryError.persistenceUnavailable
+        guard !result.wasAlreadyHandled else { return result }
+        var sessions = chatService.chatSessionsSubject.value
+        sessions.insert(session, at: 0)
+        chatService.chatSessionsSubject.send(sessions)
+        if activate {
+            await chatService.selectSession(session)
         }
         await send(trimmed, to: session.id, fileAttachments: fileAttachments, imageAttachments: imageAttachments)
-        return ETOSSystemEntryTaskResult(sessionID: session.id, wasAlreadyHandled: false)
+        return result
     }
 
     public func continueTask(
@@ -215,24 +207,24 @@ public final class SystemEntryCoordinator {
         fileAttachments: [FileAttachment] = [],
         imageAttachments: [ImageAttachment] = []
     ) async {
+        let config = AppConfigStore.shared
+        await config.waitForPersistentStoreLoaded()
         await chatService.sendAndProcessMessage(
             content: content,
-            aiTemperature: realConfig(.aiTemperature),
-            aiTopP: realConfig(.aiTopP),
-            systemPrompt: textConfig(.systemPrompt),
-            maxChatHistory: AppConfigStore.integerValue(for: .maxChatHistory),
-            enableStreaming: AppConfigStore.boolValue(for: .enableStreaming),
+            aiTemperature: config.aiTemperature,
+            aiTopP: config.aiTopP,
+            systemPrompt: config.systemPrompt,
+            maxChatHistory: config.maxChatHistory,
+            enableStreaming: config.enableStreaming,
             enhancedPrompt: nil,
-            enableMemory: AppConfigStore.boolValue(for: .enableMemory),
-            enableMemoryWrite: AppConfigStore.boolValue(for: .enableMemoryWrite),
-            enableMemoryActiveRetrieval: AppConfigStore.boolValue(for: .enableMemoryActiveRetrieval),
-            includeSystemTime: AppConfigStore.boolValue(for: .includeSystemTimeInPrompt),
-            systemTimeInjectionPosition: SystemTimeInjectionPosition(
-                rawValue: textConfig(.systemTimeInjectionPosition)
-            ) ?? .front,
-            enablePeriodicTimeLandmark: AppConfigStore.boolValue(for: .enablePeriodicTimeLandmark),
-            periodicTimeLandmarkIntervalMinutes: AppConfigStore.integerValue(for: .periodicTimeLandmarkIntervalMinutes),
-            enableResponseSpeedMetrics: AppConfigStore.boolValue(for: .enableResponseSpeedMetrics),
+            enableMemory: config.enableMemory,
+            enableMemoryWrite: config.enableMemoryWrite,
+            enableMemoryActiveRetrieval: config.enableMemoryActiveRetrieval,
+            includeSystemTime: config.includeSystemTimeInPrompt,
+            systemTimeInjectionPosition: SystemTimeInjectionPosition(rawValue: config.systemTimeInjectionPosition) ?? .front,
+            enablePeriodicTimeLandmark: config.enablePeriodicTimeLandmark,
+            periodicTimeLandmarkIntervalMinutes: config.periodicTimeLandmarkIntervalMinutes,
+            enableResponseSpeedMetrics: config.enableResponseSpeedMetrics,
             imageAttachments: imageAttachments,
             fileAttachments: fileAttachments,
             targetSessionID: sessionID
@@ -247,16 +239,6 @@ public final class SystemEntryCoordinator {
         return firstLine.isEmpty
             ? NSLocalizedString("新的 Agent 任务", comment: "Default external Agent task title")
             : String(firstLine.prefix(80))
-    }
-
-    private func textConfig(_ key: AppConfigKey) -> String {
-        AppConfigStore.textValue(for: key)
-    }
-
-    private func realConfig(_ key: AppConfigKey) -> Double {
-        if let stored = Persistence.readAppConfigReal(key: key.rawValue) { return stored }
-        if case .real(let value) = key.defaultValue { return value }
-        return 0
     }
 
     private func snapshotStatus(_ status: ConversationRunStatus?, isRunning: Bool) -> ETOSTaskSnapshotStatus {

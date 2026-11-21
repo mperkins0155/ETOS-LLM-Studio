@@ -8,6 +8,28 @@ import GRDB
 import os.log
 
 extension PersistenceGRDBStore {
+    /// 会话、模式和回执在同一事务中发布。并行重放只能得到首次会话，失败可用原请求重试。
+    func insertSystemEntrySession(
+        _ session: ChatSession, mode: LocalAgentMode, requestID: UUID, kind: ETOSSystemEntryRequestKind
+    ) throws -> ETOSSystemEntryTaskResult {
+        try dbPool.write { db in
+            let now = Date()
+            try db.execute(
+                sql: "INSERT OR IGNORE INTO system_entry_receipts (id, kind, session_id, created_at) VALUES (?, ?, ?, ?)",
+                arguments: [requestID.uuidString, kind.rawValue, session.id.uuidString, now.timeIntervalSince1970]
+            )
+            guard db.changesCount == 1 else {
+                guard let storedID = try String.fetchOne(db,
+                    sql: "SELECT session_id FROM system_entry_receipts WHERE id = ?", arguments: [requestID.uuidString]),
+                      let id = UUID(uuidString: storedID) else { throw ETOSSystemEntryError.requestInProgress }
+                return ETOSSystemEntryTaskResult(sessionID: id, wasAlreadyHandled: true)
+            }
+            try insertChatSession(session, at: now, in: db)
+            try saveLocalAgentMode(mode, sessionID: session.id, at: now, in: db)
+            return ETOSSystemEntryTaskResult(sessionID: session.id, wasAlreadyHandled: false)
+        }
+    }
+
     func loadSystemEntryReceipt(id: UUID) throws -> ETOSSystemEntryReceipt? {
         try dbPool.read { db in
             guard let row = try Row.fetchOne(
@@ -64,6 +86,18 @@ extension PersistenceGRDBStore {
 }
 
 public extension Persistence {
+    internal static func insertSystemEntrySession(
+        _ session: ChatSession, mode: LocalAgentMode, requestID: UUID, kind: ETOSSystemEntryRequestKind
+    ) throws -> ETOSSystemEntryTaskResult {
+        guard let store = activeGRDBStore() else { throw ETOSSystemEntryError.persistenceUnavailable }
+        let result = try store.insertSystemEntrySession(session, mode: mode, requestID: requestID, kind: kind)
+        if !result.wasAlreadyHandled {
+            WatchDatabaseSyncService.markDatabaseChanged(.chat)
+            postCloudSyncLocalDataDidChange()
+        }
+        return result
+    }
+
     static func loadSystemEntryReceipt(id: UUID) -> ETOSSystemEntryReceipt? {
         do {
             return try activeGRDBStore()?.loadSystemEntryReceipt(id: id)

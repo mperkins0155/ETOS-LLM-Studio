@@ -23,34 +23,15 @@ struct ETOSSessionEntity: AppEntity, Identifiable {
 
 struct ETOSSessionEntityQuery: EntityStringQuery {
     func entities(for identifiers: [UUID]) async throws -> [ETOSSessionEntity] {
-        let wanted = Set(identifiers)
-        let sessions = await Task.detached(priority: .userInitiated) {
-            Persistence.loadChatSessions()
-        }.value
-        return sessions
-            .filter { wanted.contains($0.id) }
-            .map { ETOSSessionEntity(id: $0.id, name: String($0.name.prefix(80))) }
+        try await SystemChatShortcuts.sessions(identifiers: identifiers).map { ETOSSessionEntity(id: $0.id, name: $0.name) }
     }
 
     func suggestedEntities() async throws -> [ETOSSessionEntity] {
-        let sessions = await Task.detached(priority: .userInitiated) {
-            Array(Persistence.loadChatSessions().prefix(20))
-        }.value
-        return sessions.map {
-            ETOSSessionEntity(id: $0.id, name: String($0.name.prefix(80)))
-        }
+        try await entities(matching: "")
     }
 
     func entities(matching string: String) async throws -> [ETOSSessionEntity] {
-        let query = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        let sessions = await Task.detached(priority: .userInitiated) {
-            Persistence.loadChatSessions()
-        }.value
-        return sessions
-            .lazy
-            .filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
-            .prefix(20)
-            .map { ETOSSessionEntity(id: $0.id, name: String($0.name.prefix(80))) }
+        try await SystemChatShortcuts.sessions(matching: string, limit: 20).map { ETOSSessionEntity(id: $0.id, name: $0.name) }
     }
 }
 
@@ -233,19 +214,14 @@ struct SearchETOSMemoryIntent: AppIntent {
 struct OpenETOSSessionIntent: AppIntent {
     static var title: LocalizedStringResource = "打开 ETOS 会话"
     static var openAppWhenRun = true
+    @available(iOS 26, *)
+    static var supportedModes: IntentModes { .foreground }
 
     @Parameter(title: "会话") var session: ETOSSessionEntity
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let sessionID = session.id
-        guard let value = await Task.detached(priority: .userInitiated, operation: {
-            Persistence.loadChatSession(id: sessionID)
-        }).value else {
-            throw ETOSSystemEntryError.sessionNotFound
-        }
-        await ChatService.shared.selectSession(value)
-        NotificationCenter.default.post(name: .requestSwitchToChatTab, object: nil)
+        try await SystemChatShortcuts.open(sessionID: session.id)
         return .result(dialog: IntentDialog(stringLiteral: NSLocalizedString("已打开会话。", comment: "Open session intent result")))
     }
 }
@@ -291,6 +267,12 @@ struct OpenETOSTerminalIntent: AppIntent {
 
 struct ETOSAppShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: AskETOSIntent(),
+            phrases: ["询问 \(.applicationName)"],
+            shortTitle: "询问 ETOS",
+            systemImageName: "text.bubble"
+        )
         AppShortcut(
             intent: StartETOSAgentTaskIntent(),
             phrases: ["用 \(.applicationName) 新建 Agent 任务"],

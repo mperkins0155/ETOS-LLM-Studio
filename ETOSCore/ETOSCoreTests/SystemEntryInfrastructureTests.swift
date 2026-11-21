@@ -165,6 +165,31 @@ struct SystemEntryInfrastructureTests {
         #expect(receipt.kind == .appIntent)
     }
 
+    @Test("快捷指令原子创建会话、模式与回执；失败可重试，重放不会覆盖其他会话")
+    func shortcutSessionInsertion() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let store = try PersistenceGRDBStore(chatsDirectory: root)
+        let existing = ChatSession(id: UUID(), name: "已有会话")
+        try store.insertChatSession(existing, messages: [])
+        let requestID = UUID()
+        #expect(throws: SessionInsertionError.alreadyExists) {
+            try store.insertSystemEntrySession(existing, mode: .agent, requestID: requestID, kind: .appIntent)
+        }
+        #expect(try store.loadSystemEntryReceipt(id: requestID) == nil)
+
+        let chat = ChatSession(id: UUID(), name: "新聊天")
+        let first = try store.insertSystemEntrySession(chat, mode: .chat, requestID: requestID, kind: .appIntent)
+        let replay = try store.insertSystemEntrySession(
+            ChatSession(id: UUID(), name: "重放"), mode: .agent, requestID: requestID, kind: .appIntent
+        )
+        #expect(!first.wasAlreadyHandled)
+        #expect(replay.wasAlreadyHandled && replay.sessionID == chat.id)
+        #expect(try store.localAgentMode(sessionID: chat.id) == .chat)
+        #expect(store.loadChatSessions().map(\.id) == [chat.id, existing.id])
+    }
+
     @Test("旧 Linux 共享目录迁移到 App Group 且可重复调用")
     func legacyLinuxDirectoryMigration() throws {
         let root = temporaryDirectory()

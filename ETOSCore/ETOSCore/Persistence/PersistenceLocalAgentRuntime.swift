@@ -31,17 +31,21 @@ extension PersistenceGRDBStore {
     func saveLocalAgentMode(_ mode: LocalAgentMode, sessionID: UUID, at date: Date) throws {
         try dbPool.write { db in
             try ensureSessionExists(db, sessionID: sessionID)
-            try db.execute(
-                sql: """
-                INSERT INTO local_agent_session_modes (session_id, mode, updated_at)
-                VALUES (?, ?, ?)
-                ON CONFLICT(session_id) DO UPDATE SET
-                    mode = excluded.mode,
-                    updated_at = excluded.updated_at
-                """,
-                arguments: [sessionID.uuidString, mode.rawValue, date.timeIntervalSince1970]
-            )
+            try saveLocalAgentMode(mode, sessionID: sessionID, at: date, in: db)
         }
+    }
+
+    func saveLocalAgentMode(_ mode: LocalAgentMode, sessionID: UUID, at date: Date, in db: Database) throws {
+        try db.execute(
+            sql: """
+            INSERT INTO local_agent_session_modes (session_id, mode, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(session_id) DO UPDATE SET
+                mode = excluded.mode,
+                updated_at = excluded.updated_at
+            """,
+            arguments: [sessionID.uuidString, mode.rawValue, date.timeIntervalSince1970]
+        )
     }
 
     func browserAgentDataProfile(sessionID: UUID) throws -> BrowserAgentDataProfile? {

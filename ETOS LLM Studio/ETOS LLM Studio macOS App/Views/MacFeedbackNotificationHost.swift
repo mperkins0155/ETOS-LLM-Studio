@@ -19,6 +19,10 @@ struct MacFeedbackNotificationHost: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onChange(of: notifications.pendingRoute) { _, _ in receive() }
+            .onChange(of: notifications.pendingChatSessionID) { _, _ in receive() }
+            .onChange(of: workspace.isMutatingHistory || workspace.sessionLibrary.isWorking) { _, busy in
+                if !busy && notifications.pendingRoute == .chatSession { receive() }
+            }
             .onChange(of: announcements.shouldShowAlert) { _, _ in receive() }
             .onChange(of: workspace.canManageLocalModels) { _, available in
                 if available { receive() } else { destination = nil }
@@ -82,6 +86,11 @@ struct MacFeedbackNotificationHost: ViewModifier {
     private func receive() {
         guard workspace.canManageLocalModels, destination == nil, !isBlocked, !dailyPulse.showsWindow else { return }
         switch notifications.pendingRoute {
+        case .chatSession:
+            guard !workspace.isMutatingHistory, !workspace.sessionLibrary.isWorking,
+                  let id = notifications.consumePendingChatSessionID() else { return }
+            _ = notifications.consumePendingRoute()
+            workspace.selectSession(id)
         case .feedback:
             issueNumber = notifications.consumePendingFeedbackIssueNumber()
             _ = notifications.consumePendingRoute()

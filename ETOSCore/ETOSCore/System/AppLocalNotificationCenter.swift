@@ -566,9 +566,9 @@ public final class AppLocalNotificationCenter: NSObject, ObservableObject {
         NotificationCenter.default.post(name: .requestOpenFeedback, object: nil)
     }
 
-    private func openChatSessionFromNotification(payload: AppLocalNotificationPayload) {
+    public func requestOpenChatSession(id: UUID) {
+        pendingChatSessionID = id
         pendingRoute = .chatSession
-        pendingChatSessionID = payload.sessionID
         NotificationCenter.default.post(name: .requestOpenChatSession, object: nil)
     }
 
@@ -622,8 +622,8 @@ public final class AppLocalNotificationCenter: NSObject, ObservableObject {
             )
         } else if payload.route == .feedback {
             openFeedbackFromNotification(payload: payload)
-        } else if payload.route == .chatSession {
-            openChatSessionFromNotification(payload: payload)
+        } else if payload.route == .chatSession, let id = payload.sessionID {
+            requestOpenChatSession(id: id)
         } else if payload.route == .contextCompression {
             openContextCompressionFromNotification(payload: payload)
         } else if payload.route == .achievementJournal {

@@ -8539,3 +8539,13 @@
 "usage_dashboard.segment.input" = "Input";
 "usage_dashboard.segment.output" = "Output";
 "usage_dashboard.segment.thinking" = "Thinking";
+
+// 系统快捷指令的聊天动作
+"询问 ETOS" = "Ask ETOS";
+"向聊天模型提问并返回文本，不创建会话。" = "Ask the chat model a question and return its answer as text without creating a conversation.";
+"发送聊天消息" = "Send Chat Message";
+"留空会话以新建聊天，或在所选会话中继续。返回收到消息的会话。" = "Leave the conversation empty to start a new chat, or continue a selected conversation. Returns the conversation that received the message.";
+"列出会话" = "List Conversations";
+"按聊天列表顺序返回已保存的会话，可按名称筛选。" = "Returns saved conversations in chat list order. Filter by name if needed.";
+"读取最近回复" = "Get Latest Reply";
+"没有可读取的文本回复。" = "No text reply is available.";

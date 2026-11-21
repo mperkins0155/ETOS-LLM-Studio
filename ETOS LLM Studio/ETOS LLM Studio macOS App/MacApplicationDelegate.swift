@@ -18,7 +18,7 @@ final class MacApplicationDelegate: NSObject, NSApplicationDelegate, ObservableO
         AppLocalNotificationCenter.shared.configureIfNeeded()
         featureNotifications = AppLocalNotificationCenter.shared.$pendingRoute.receive(on: DispatchQueue.main)
             .sink { [weak self] route in
-                guard route == .feedback || route == .achievementJournal || route == .updateTimeline, let self, !isTerminating else { return }
+                guard route == .chatSession || route == .feedback || route == .achievementJournal || route == .updateTimeline, let self, !isTerminating else { return }
                 showWorkspace?()
             }
         pulseNotifications = AppLocalNotificationCenter.shared.$pendingDailyPulseRequests.receive(on: DispatchQueue.main)
@@ -35,7 +35,8 @@ final class MacApplicationDelegate: NSObject, NSApplicationDelegate, ObservableO
 
     func attach(workspace: MacWorkspaceModel, showWorkspace: @escaping @MainActor () -> Void) {
         self.workspace = workspace; self.showWorkspace = showWorkspace
-        if !isTerminating, AppLocalNotificationCenter.shared.pendingRoute == .feedback || AppLocalNotificationCenter.shared.pendingRoute == .achievementJournal || AppLocalNotificationCenter.shared.pendingRoute == .updateTimeline { showWorkspace() }
+        let route = AppLocalNotificationCenter.shared.pendingRoute
+        if !isTerminating, route == .chatSession || route == .feedback || route == .achievementJournal || route == .updateTimeline { showWorkspace() }
         if !isTerminating, !AppLocalNotificationCenter.shared.pendingDailyPulseRequests.isEmpty { showWorkspace() }
         if !isTerminating, AppLocalNotificationCenter.shared.pendingContextCompressionSessionID != nil { showWorkspace() }
         guard !isTerminating, !pendingOpenRequests.isEmpty else { return }
